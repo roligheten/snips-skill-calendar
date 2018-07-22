@@ -45,8 +45,7 @@ def isToday(date):
                                               today.day,
                                               23, 59, 59))
 
-    print(date, todayStart)
-    return date > todayStart and date <= todayEnd
+    return date >= todayStart and date < todayEnd
 
 
 def isTomorrow(date):
@@ -57,7 +56,7 @@ def isTomorrow(date):
     tomorrowEnd = utc.localize(datetime.datetime(
         tomorrow.year, tomorrow.month, tomorrow.day, 23, 59, 59))
 
-    return date > tomorrowStart and date <= tomorrowEnd
+    return date >= tomorrowStart and date < tomorrowEnd
 
 
 def timeOfDayAsSpoken(hour, minute):
@@ -78,41 +77,46 @@ def timeOfDayAsSpoken(hour, minute):
     return buf
 
 
-def dateAsSpoken(date, includeDate, includeTime):
-    if not includeDate and not includeTime:
-        raise RuntimeError('Cannot build date string without date or time')
+def timeAsSpoken(time):
+    hour = time.hour
+    minute = time.minute
 
-    buf = ''
-    if includeDate:
-        buf += numberToOrdinal(date.day) + ' of ' + monthAsSpoken(date.month)
-    if includeTime:
-        if includeDate:
-            buf += ' at '
-        buf += timeOfDayAsSpoken(date.hour, date.minute)
+    period = 'am'
+    if hour >= 12:
+        period = 'pm'
+        if hour > 12:
+            hour -= 12
+    elif hour == 0:
+        hour = 12
+
+    buf = str(hour) + ':'
+    if minute < 10:
+        buf += '0'
+    buf += str(minute) + ' '
+    buf += period
+
     return buf
 
 
-def eventAsSpoken(event, assumeDateKnown=False):
-    buf = None
-    if assumeDateKnown:
-        buf = 'at ' + dateAsSpoken(event.startDate, False, True)
-    elif isToday(event.startDate):
-        buf = 'today at ' + dateAsSpoken(event.startDate, False, True)
-    elif isTomorrow(event.startDate):
-        buf = 'tomorrow at ' + dateAsSpoken(event.startDate, False, True)
+def dateAsSpoken(date):
+    date = utc.localize(datetime.datetime(date.year, date.month, date.day))
+
+    if isToday(date):
+        return 'today'
+    elif isTomorrow(date):
+        return 'tomorrow'
     else:
-        buf = 'on the ' + dateAsSpoken(event.startDate, True, True)
-
-    buf += ' . ' + event.title
-    return buf
+        return 'on the ' + numberToOrdinal(date.day) \
+            + ' of ' + monthAsSpoken(date.month)
 
 
-def eventsAsSpoken(events, assumeDateKnown):
-    buf = None
+def eventsAsSpoken(events):
+    buf = ''
 
-    for event in events:
-        if buf is None:
-            buf = eventAsSpoken(event, assumeDateKnown)
-        else:
-            buf += '. ' + eventAsSpoken(event, assumeDateKnown)
+    for date in events:
+        dayEvents = events[date]
+        buf += dateAsSpoken(date)
+        for event in dayEvents:
+            buf += ' at ' + timeAsSpoken(event.startDate.time()) \
+                + '. ' + event.title + '. '
     return buf

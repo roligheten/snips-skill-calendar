@@ -1,7 +1,7 @@
 import paho.mqtt.client as mqtt
 import time
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import dateutil.parser
 import logging
 import logging.config
@@ -26,6 +26,30 @@ mqttCli = None
 skill = None
 
 
+def endOfHour(date):
+    return datetime(date.year, date.month, date.day, date.hour, 59, 59)
+
+
+def endOfDay(date):
+    return datetime(date.year, date.month, date.day, 23, 59, 59)
+
+
+def endOfWeek(date):
+    date = endOfDay(date)
+    return date - timedelta(days=date.weekday()) + timedelta(days=6)
+
+
+def resolveGrainToDate(date, grain):
+    if grain == 'Hour':
+        return endOfHour(date)
+    if grain == 'Day':
+        return endOfDay(date)
+    elif grain == 'Week':
+        return endOfWeek(date)
+    else:
+        raise Exception('\'{}\' is not a valid granularity'.format(grain))
+
+
 class Skill:
     def __init__(self, cli):
         self.logger = logging.getLogger(__name__)
@@ -43,7 +67,8 @@ class Skill:
             pass
 
     def respond_eventsAt(self, sessionId, slots):
-        date = datetime.today()
+        startDate = datetime.today()
+        endDate = None
 
         # TODO: Handle multiple dates given
         matchedSlot = snipshelpers.intent_helper \
@@ -53,20 +78,16 @@ class Skill:
         if matchedSlot is not None:
             val = matchedSlot['value']
             if val['kind'] == 'InstantTime':
-                date = dateutil.parser.parse(val['value'])
-                response = summerizeEvents(self.provider, date, val['grain'])
+                startDate = dateutil.parser.parse(val['value'])
+                endDate = resolveGrainToDate(startDate, val['grain'])
             elif val['kind'] == 'TimeInterval':
-                # TODO: Handle interval slot
-                self.logger.warn(
-                    'Asked to handle unimplemented slot kind \'%s\'',
-                    val['kind'])
-            else:
-                self.logger.warn(
-                    'Asked to handle unimplemented slot kind \'%s\'',
-                    val['kind'])
+                startDate = dateutil.parser.parse(val['from'])
+                endDate = dateutil.parser.parse(val['to'])
         else:
             self.logger.warn('Asked to handle intent with no date slot')
             # TODO: Handle no slot
+
+        response = summerizeEvents(self.provider, startDate, endDate)
 
         if response is None:
             response = "Sorry, I was not able to understand that query."
