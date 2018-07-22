@@ -12,7 +12,7 @@ import snipshelpers.intent_helper
 from calendars.providers import GoogleCalendarProvider
 from calendars import summerizeEvents
 
-MQTT_IP_ADDR = "raspberrypi.local"
+MQTT_IP_ADDR = "localhost"
 MQTT_PORT = 1883
 
 CONFIGURATION_ENCODING_FORMAT = "utf-8"
