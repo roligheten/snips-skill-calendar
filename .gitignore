@@ -104,3 +104,4 @@ venv.bak/
 .mypy_cache/
 
 user_creds.json
+config.ini
