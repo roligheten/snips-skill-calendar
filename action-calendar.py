@@ -47,7 +47,7 @@ def resolveGrainToDate(date, grain):
     elif grain == 'Week':
         return endOfWeek(date)
     else:
-        raise Exception('\'{}\' is not a valid granularity'.format(grain))
+        return None
 
 
 class Skill:
@@ -84,13 +84,14 @@ class Skill:
                 startDate = dateutil.parser.parse(val['from'])
                 endDate = dateutil.parser.parse(val['to'])
         else:
-            self.logger.warn('Asked to handle intent with no date slot')
-            # TODO: Handle no slot
+            # If not slot exists assume user asked for events today
+            endDate = resolveGrainToDate(startDate, 'Day')
 
-        response = summerizeEvents(self.provider, startDate, endDate)
-
-        if response is None:
-            response = "Sorry, I was not able to understand that query."
+        response = None
+        if endDate is None:
+            response = "Sorry, I cannot answer that question."
+        else:
+            response = summerizeEvents(self.provider, startDate, endDate)
 
         self.mqttClient.publish('hermes/dialogueManager/endSession',
                                 json.dumps({
@@ -100,16 +101,26 @@ class Skill:
 
 
 def onMessage(client, userData, message):
+    logger = logging.getLogger(__name__)
     payload = json.loads(message.payload)
 
-    skill.handleIntent(payload['sessionId'], message.topic, payload['slots'])
+    try:
+        skill.handleIntent(payload['sessionId'],
+                           message.topic,
+                           payload['slots'])
+    except Exception:
+        logger.exception('Failed to answer query')
 
 
 def onConnect(client, userData, flags, rc):
     logger = logging.getLogger(__name__)
     logger.info('Connected to MQTT broker')
-    mqttCli.subscribe(INT_QUERYNEXT)
-    mqttCli.subscribe(INT_EVENTSAT)
+
+    try:
+        mqttCli.subscribe(INT_QUERYNEXT)
+        mqttCli.subscribe(INT_EVENTSAT)
+    except Exception:
+        logger.exception('Failed subscribing to topic')
 
 
 if __name__ == '__main__':
@@ -119,7 +130,7 @@ if __name__ == '__main__':
             loggerConf = json.loads(loggerConfFile.read())
             logging.config.dictConfig(loggerConf)
             logger = logging.getLogger(__name__)
-    except Exception as e:
+    except Exception:
         logging.exception('Failed to load configuration from file')
         exit(-1)
 
@@ -131,14 +142,14 @@ if __name__ == '__main__':
         mqttCli.connect(MQTT_IP_ADDR, MQTT_PORT)
 
         mqttCli.loop_start()
-    except Exception as e:
+    except Exception:
         logger.exception('Failed to initialize MQTT connection')
         exit(-1)
 
     logger.info('Calendar action initializing')
     try:
         skill = Skill(mqttCli)
-    except Exception as e:
+    except Exception:
         logger.exception('Failed to initialize skill')
         exit(-1)
 
