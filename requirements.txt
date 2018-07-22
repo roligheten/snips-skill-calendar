@@ -1,2 +1,4 @@
 python-dateutil
 paho-mqtt
+pytz
+google-api-python-client
