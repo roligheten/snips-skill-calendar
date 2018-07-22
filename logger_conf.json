@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "formatters": {
+        "simple": {
+            "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        }
+    },
+  "handlers": {
+    "console": {
+      "formatter": "simple",
+      "class": "logging.StreamHandler",
+      "stream": "ext://sys.stdout"
+    },
+    "file": {
+      "formatter": "simple",
+      "class": "logging.FileHandler",
+      "filename": "error.log"
+    }
+  },
+  "loggers": {
+    "__main__": {
+      "level": "INFO",
+      "handlers": [
+        "console",
+        "file"
+      ]
+    },
+    "calendars": {
+      "level": "INFO",
+      "handlers": [
+        "console",
+        "file"
+      ]
+    },
+    "googleapiclient.discovery_cache": {
+      "level": "ERROR",
+      "handlers": [
+        "console",
+        "file"
+      ]
+    }
+  }
+
+}
