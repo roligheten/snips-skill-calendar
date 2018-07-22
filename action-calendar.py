@@ -26,6 +26,10 @@ mqttCli = None
 skill = None
 
 
+def endOfMinute(date):
+    return datetime(date.year, date.month, date.day, date.hour, date.minute, 59)
+
+
 def endOfHour(date):
     return datetime(date.year, date.month, date.day, date.hour, 59, 59)
 
@@ -40,6 +44,8 @@ def endOfWeek(date):
 
 
 def resolveGrainToDate(date, grain):
+    if grain == 'Minute':
+        return endOfMinute(date)
     if grain == 'Hour':
         return endOfHour(date)
     if grain == 'Day':
@@ -59,9 +65,11 @@ class Skill:
         self.provider = GoogleCalendarProvider(self.config['secret'])
 
     def handleIntent(self, sessionId, intent, slots):
+        self.logger.info('Handling topic \'%s\'', intent)
         if intent == INT_EVENTSAT:
-            self.logger.info('Handling topic \'%s\'', intent)
             self.respond_eventsAt(sessionId, slots)
+        elif intent == INT_QUERYNEXT:
+            self.respond_eventsNext(sessionId, slots)
         else:
             self.logger.warn('Asked to handle unknown topic \'%s\'', intent)
             pass
@@ -93,6 +101,15 @@ class Skill:
         else:
             response = summerizeEvents(self.provider, startDate, endDate)
 
+        self.mqttClient.publish('hermes/dialogueManager/endSession',
+                                json.dumps({
+                                    'sessionId': sessionId,
+                                    'text': response
+                                }))
+
+    def respond_eventsNext(self, sessionId, slots):
+        # TODO: Implement handling 'next event' type queries
+        response = 'Sorry, I cannot answer that question.'
         self.mqttClient.publish('hermes/dialogueManager/endSession',
                                 json.dumps({
                                     'sessionId': sessionId,
@@ -155,6 +172,7 @@ if __name__ == '__main__':
 
     shouldStop = False
     try:
+        logger.info('Entering infinite loop on main thread')
         while not shouldStop:
             time.sleep(0.1)
     except KeyboardInterrupt:
