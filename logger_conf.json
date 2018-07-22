@@ -21,22 +21,19 @@
     "__main__": {
       "level": "INFO",
       "handlers": [
-        "console",
-        "file"
+        "console"
       ]
     },
     "calendars": {
       "level": "INFO",
       "handlers": [
-        "console",
-        "file"
+        "console"
       ]
     },
     "googleapiclient.discovery_cache": {
       "level": "ERROR",
       "handlers": [
-        "console",
-        "file"
+        "console"
       ]
     }
   }
