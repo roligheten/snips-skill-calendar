@@ -13,13 +13,7 @@
     }
   },
   "loggers": {
-    "__main__": {
-      "level": "INFO",
-      "handlers": [
-        "console"
-      ]
-    },
-    "calendars": {
+    "CalendarApp": {
       "level": "INFO",
       "handlers": [
         "console"

@@ -23,6 +23,7 @@ MQTT_PORT = 1883
 CONFIGURATION_ENCODING_FORMAT = "utf-8"
 SNIPS_CONF = 'config.ini'
 LOGGER_CONF = 'logger_conf.json'
+APP_LOGGER = 'CalendarApp'
 
 INT_QUERYNEXT = 'hermes/intent/chrbarrol:queryNextEvent'
 INT_EVENTSAT = 'hermes/intent/chrbarrol:queryEventsAtDate'
@@ -65,7 +66,7 @@ def resolveGrainToDate(date, grain):
 
 class Skill:
     def __init__(self, cli, dataDir):
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(APP_LOGGER)
         self.config = SnipsConfigParser.read_configuration_file(SNIPS_CONF)
         self.mqttClient = cli
         self.dataDir = dataDir
@@ -127,7 +128,7 @@ class Skill:
 
 
 def onMessage(client, userData, message):
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger(APP_LOGGER)
     payload = json.loads(message.payload)
 
     try:
@@ -139,7 +140,7 @@ def onMessage(client, userData, message):
 
 
 def onConnect(client, userData, flags, rc):
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger(APP_LOGGER)
     logger.info('Connected to MQTT broker')
 
     try:
@@ -155,7 +156,7 @@ if __name__ == '__main__':
         with open(LOGGER_CONF, 'rt') as loggerConfFile:
             loggerConf = json.loads(loggerConfFile.read())
             logging.config.dictConfig(loggerConf)
-            logger = logging.getLogger(__name__)
+            logger = logging.getLogger(APP_LOGGER)
     except Exception:
         logging.exception('Failed to load configuration from file')
         exit(-1)

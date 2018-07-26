@@ -12,6 +12,7 @@ import os.path
 
 USER_CRED_NAME = 'google_calendar_creds.json'
 APP_CRED_PATH = 'app_creds.json'
+APP_LOGGER = 'CalendarApp'
 
 
 def googleEventToCalendarEvent(googleEvent):
@@ -59,19 +60,22 @@ def buildGoogleApiService(credentials):
 
 class GoogleCalendarProvider(AbstractProvider):
     def __init__(self, config, credentialsDir):
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(APP_LOGGER)
         self.logger.info('Initializing Google Calendar provider')
 
         credentialsPath = '{}/{}'.format(credentialsDir, USER_CRED_NAME)
         self.creds = retrieveStoredCredentials(credentialsPath)
 
         if self.creds is None:
+            self.logger.info('No stored credentials found, retrieving new')
             if 'google_token' not in config or config['google_token'] == '':
                 raise Exception('Unable to find Google '
                                 + 'authorization code in action config')
             self.creds = retrieveNewCredentials(config['google_token'])
             saveCredentials(credentialsPath, self.creds)
-
+            self.logger.info('New credentials retrieved and stored')
+        else:
+            self.logger.info('Existing credentials retrieved from disk')
         self.service = buildGoogleApiService(self.creds)
 
     def retrieveEventsByDate(self, startDate, endDate):
