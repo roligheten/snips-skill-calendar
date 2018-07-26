@@ -8,6 +8,8 @@ During deployment of your assistant it will ask you to provide "google_token", t
 
 [Link to Google sign-in](https://accounts.google.com/o/oauth2/auth?scope=https://www.googleapis.com/auth/calendar&response_type=code&redirect_uri=urn:ietf:wg:oauth:2.0:oob&client_id=173155842276-rfbrtra35u55rug7jtc85i50r9grunbg.apps.googleusercontent.com)
 
+This token is only stored on your device and all API calls are made from your device directly to the Google API.
+
 **It is important that the timezone on your Snips device is correct**, if it is not the app will malfunction. If you are running stock Raspbian this can be changed via the "raspi-config" command
 
 # Supported intents:
