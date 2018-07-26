@@ -9,6 +9,8 @@ import dateutil.parser
 import logging
 import logging.config
 from sys import exit
+from os import makedirs, environ
+import errno
 
 from snipshelpers.config_parser import SnipsConfigParser
 import snipshelpers.intent_helper
@@ -24,6 +26,8 @@ LOGGER_CONF = 'logger_conf.json'
 
 INT_QUERYNEXT = 'hermes/intent/chrbarrol:queryNextEvent'
 INT_EVENTSAT = 'hermes/intent/chrbarrol:queryEventsAtDate'
+
+DATA_DIR_NAME = 'calendar_app_data'
 
 mqttCli = None
 skill = None
@@ -60,12 +64,14 @@ def resolveGrainToDate(date, grain):
 
 
 class Skill:
-    def __init__(self, cli):
+    def __init__(self, cli, dataDir):
         self.logger = logging.getLogger(__name__)
         self.config = SnipsConfigParser.read_configuration_file(SNIPS_CONF)
         self.mqttClient = cli
+        self.dataDir = dataDir
 
-        self.provider = GoogleCalendarProvider(self.config['secret'])
+        self.provider = GoogleCalendarProvider(self.config['secret'],
+                                               self.dataDir)
 
     def handleIntent(self, sessionId, intent, slots):
         self.logger.info('Handling topic \'%s\'', intent)
@@ -154,6 +160,16 @@ if __name__ == '__main__':
         logging.exception('Failed to load configuration from file')
         exit(-1)
 
+    dataDir = '{}/{}'.format(environ['HOME'], DATA_DIR_NAME)
+    try:
+        makedirs(dataDir)
+    except OSError as exception:
+        if exception.errno != errno.EEXIST:
+            logger.exception('Failed to create data directory')
+            exit(-1)
+        else:
+            logger.info('Created data directory at \'{}\''.format(dataDir))
+
     logger.info('Connecting to MQTT broker')
     try:
         mqttCli = mqtt.Client()
@@ -168,7 +184,7 @@ if __name__ == '__main__':
 
     logger.info('Calendar action initializing')
     try:
-        skill = Skill(mqttCli)
+        skill = Skill(mqttCli, dataDir)
     except Exception:
         logger.exception('Failed to initialize skill')
         exit(-1)

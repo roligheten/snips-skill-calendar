@@ -5,7 +5,7 @@ class AbstractProvider:
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def __init__(self, config):
+    def __init__(self, config, credentialsDir):
         pass
 
     @abstractmethod

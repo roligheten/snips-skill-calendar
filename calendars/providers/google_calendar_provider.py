@@ -10,7 +10,7 @@ import os.path
 
 # https://accounts.google.com/o/oauth2/auth?scope=https://www.googleapis.com/auth/calendar&response_type=code&redirect_uri=urn:ietf:wg:oauth:2.0:oob&client_id=173155842276-rfbrtra35u55rug7jtc85i50r9grunbg.apps.googleusercontent.com
 
-USER_CRED_PATH = 'user_creds.json'
+USER_CRED_NAME = 'google_calendar_creds.json'
 APP_CRED_PATH = 'app_creds.json'
 
 
@@ -34,31 +34,45 @@ def apiFormatToDate(dateString):
     return dateutil.parser.parse(dateString)
 
 
+def saveCredentials(credentialsPath, credentials):
+    file.Storage(credentialsPath).locked_put(credentials)
+
+
+def retrieveNewCredentials(authenticationCode):
+    return client.credentials_from_clientsecrets_and_code(
+        filename=APP_CRED_PATH,
+        code=authenticationCode,
+        scope='https://www.googleapis.com/auth/calendar',
+        redirect_uri='urn:ietf:wg:oauth:2.0:oob')
+
+
+def retrieveStoredCredentials(credentialsPath):
+    if os.path.isfile(credentialsPath):
+        return file.Storage(credentialsPath).locked_get()
+    else:
+        return None
+
+
+def buildGoogleApiService(credentials):
+    return build('calendar', 'v3', http=credentials.authorize(Http()))
+
+
 class GoogleCalendarProvider(AbstractProvider):
-    def __init__(self, config):
+    def __init__(self, config, credentialsDir):
         self.logger = logging.getLogger(__name__)
         self.logger.info('Initializing Google Calendar provider')
 
-        self.creds = None
-        if os.path.isfile(USER_CRED_PATH):
-            self.creds = file.Storage(USER_CRED_PATH).locked_get()
-        else:
-            self.logger.info('Attempting to retrieve new user credentials')
-            if 'google_token' not in config:
-                raise Exception('Unable to find Google  \
-                                authorization code in action config')
+        credentialsPath = '{}/{}'.format(credentialsDir, USER_CRED_NAME)
+        self.creds = retrieveStoredCredentials(credentialsPath)
 
-            self.creds = client.credentials_from_clientsecrets_and_code(
-                filename=APP_CRED_PATH,
-                code=config['google_token'],
-                scope='https://www.googleapis.com/auth/calendar',
-                redirect_uri='urn:ietf:wg:oauth:2.0:oob')
+        if self.creds is None:
+            if 'google_token' not in config or config['google_token'] == '':
+                raise Exception('Unable to find Google '
+                                + 'authorization code in action config')
+            self.creds = retrieveNewCredentials(config['google_token'])
+            saveCredentials(credentialsPath, self.creds)
 
-            file.Storage(USER_CRED_PATH).locked_put(self.creds)
-            self.logger.info('New credentials retrieved and stored')
-
-        self.service = build('calendar', 'v3',
-                             http=self.creds.authorize(Http()))
+        self.service = buildGoogleApiService(self.creds)
 
     def retrieveEventsByDate(self, startDate, endDate):
         response = self.service.events().list(
