@@ -28,7 +28,7 @@ def googleEventToCalendarEvent(googleEvent):
 
 
 def dateToApiFormat(date):
-    return date.strftime('%Y-%m-%dT%H:%M:%S')+'Z'
+    return date.strftime('%Y-%m-%dT%H:%M:%S%z')
 
 
 def apiFormatToDate(dateString):
@@ -85,6 +85,5 @@ class GoogleCalendarProvider(AbstractProvider):
             orderBy='startTime',
             timeMin=dateToApiFormat(startDate),
             timeMax=dateToApiFormat(endDate)).execute()
-
         return [googleEventToCalendarEvent(evt)
                 for evt in response.get('items', [])]

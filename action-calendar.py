@@ -35,15 +35,15 @@ skill = None
 
 
 def endOfMinute(date):
-    return datetime(date.year, date.month, date.day, date.hour, date.minute, 59)
+    return datetime(date.year, date.month, date.day, date.hour, date.minute, 59, 0, date.tzinfo)
 
 
 def endOfHour(date):
-    return datetime(date.year, date.month, date.day, date.hour, 59, 59)
+    return datetime(date.year, date.month, date.day, date.hour, 59, 59, 0, date.tzinfo)
 
 
 def endOfDay(date):
-    return datetime(date.year, date.month, date.day, 23, 59, 59)
+    return datetime(date.year, date.month, date.day, 23, 59, 59, 0, date.tzinfo)
 
 
 def endOfWeek(date):
